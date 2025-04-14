@@ -65,6 +65,14 @@ userRouter.get("/:id", async (ctx) => {
 // 6. Mount subrouter
 router.route("/users", userRouter);
 
+// 7. Add wildcard route
+router.get("/wildcard/*", async (ctx) => {
+	return new Response(JSON.stringify({
+		message: "wildcard route",
+		path: ctx.params
+	}));
+});
+
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		return router.handle(request, env, {} as Store);

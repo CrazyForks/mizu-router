@@ -21,7 +21,7 @@ interface TrieNode<Env, Store> {
     children: Map<string, TrieNode<Env, Store>>;
     paramChild?: TrieNode<Env, Store>;
     paramName?: string;
-    wildcardChild?: TrieNode<Env, Store>; // NEW
+    wildcardChild?: TrieNode<Env, Store>;
     route?: RouteNode<Env, Store>;
 }
 
@@ -54,6 +54,26 @@ export class Router<Env = {}, Store = {}> {
 
     post(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
         this.register("POST", path, handler, middlewares);
+    }
+
+    delete(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
+        this.register("DELETE", path, handler, middlewares);
+    }
+
+    put(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
+        this.register("PUT", path, handler, middlewares);
+    }
+
+    patch(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
+        this.register("PATCH", path, handler, middlewares);
+    }
+
+    head(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
+        this.register("HEAD", path, handler, middlewares);
+    }
+
+    options(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
+        this.register("OPTIONS", path, handler, middlewares);
     }
 
     private register(
@@ -132,7 +152,6 @@ export class Router<Env = {}, Store = {}> {
                     params[current.paramChild.paramName!] = segment;
                     current = current.paramChild;
                 } else if (current.wildcardChild) {
-                    // Optional: store remaining path in "*"
                     params["*"] = segments.slice(i).join("/");
                     current = current.wildcardChild;
                     break;
@@ -178,10 +197,14 @@ export class Router<Env = {}, Store = {}> {
                 index = i;
                 const fn = mws[i];
                 if (!fn) return;
-
-                const result = await fn(ctx, () => dispatch(i + 1));
-                if (result instanceof Response) {
-                    return result;
+                try {
+                    const result = await fn(ctx, () => dispatch(i + 1));
+                    if (result instanceof Response) {
+                        return result;
+                    }
+                } catch (error) {
+                    console.error("[ERROR]: Middleware error", error);
+                    return new Response("Internal Server Error", { status: 500 });
                 }
             };
             return dispatch(0);
