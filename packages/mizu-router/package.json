@@ -14,15 +14,18 @@
   },
   "homepage": "https://github.com/DarthBenro008/mizu-router#readme",
   "scripts": {
-    "prepack": "cp ../../README.md ./README.md",
-    "build": "tsc",
+    "build": "rollup -c",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "exports": {
-    ".": "./dist/index.js"
-  },
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "keywords": [
     "router",
     "cloudflare",
@@ -34,6 +37,13 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250414.0",
     "@edge-runtime/vm": "^5.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "fs-extra": "^11.3.0",
+    "globby": "^14.1.0",
+    "rollup": "^4.40.0",
+    "rollup-plugin-bundle-size": "^1.0.3",
+    "rollup-plugin-copy": "^3.5.0",
     "typescript": "^5.5.2",
     "vitest": "~3.0.7"
   }
