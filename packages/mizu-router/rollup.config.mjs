@@ -64,6 +64,10 @@ export default async () => {
             src: ['../../README.md'],
             dest: 'dist',
           },
+          {
+            src: ['./package.json'],
+            dest: 'dist',
+          },
         ],
       }),
     ],
