@@ -1,4 +1,3 @@
-![banner](assets/banner.png)
 ![release](https://img.shields.io/github/v/release/DarthBenro008/mizu-router)
 [![GitHub License](https://img.shields.io/github/license/darthbenro008/mizu-router)](https://github.com/DarthBenro008/mizu-router/blob/master/LICENSE)
 [![NPMJS](https://img.shields.io/npm/v/mizu-router)](https://www.npmjs.com/package/mizu-router)
