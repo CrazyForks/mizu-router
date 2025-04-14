@@ -19,6 +19,10 @@ importers:
         version: 5.8.2
 
   apps/example-worker:
+    dependencies:
+      mizu-router:
+        specifier: workspace:*
+        version: link:../../packages/mizu-router
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.7.5
