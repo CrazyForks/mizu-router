@@ -21,6 +21,7 @@ interface TrieNode<Env, Store> {
     children: Map<string, TrieNode<Env, Store>>;
     paramChild?: TrieNode<Env, Store>;
     paramName?: string;
+    wildcardChild?: TrieNode<Env, Store>; // NEW
     route?: RouteNode<Env, Store>;
 }
 
@@ -33,17 +34,18 @@ export class Router<Env = {}, Store = {}> {
     }
 
     route(prefix: string, subrouter: Router<Env, Store>) {
-        this.use(async (ctx, next) => {
+        const handler = async (ctx: Context<Env, Store>, next: () => Promise<Response | void>) => {
             const url = new URL(ctx.req.url);
-            if (url.pathname.startsWith(prefix)) {
-                const subPath = url.pathname.slice(prefix.length) || "/";
-                const newUrl = new URL(ctx.req.url);
-                newUrl.pathname = subPath;
-                const newReq = new Request(newUrl.toString(), ctx.req);
-                return subrouter.handle(newReq, ctx.env, ctx.store);
-            }
-            return next();
-        });
+            const subPath = url.pathname.startsWith(prefix)
+                ? url.pathname.slice(prefix.length) || "/"
+                : "/";
+            const newUrl = new URL(ctx.req.url);
+            newUrl.pathname = subPath;
+            const newReq = new Request(newUrl.toString(), ctx.req);
+            return subrouter.handle(newReq, ctx.env, ctx.store);
+        };
+
+        this.register("*", prefix.endsWith("/") ? `${prefix}*` : `${prefix}/*`, handler, []);
     }
 
     get(path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
@@ -65,7 +67,13 @@ export class Router<Env = {}, Store = {}> {
         let node = this.trees[method];
 
         for (const segment of segments) {
-            if (segment.startsWith(":")) {
+            if (segment === "*") {
+                if (!node.wildcardChild) {
+                    node.wildcardChild = this.createNode();
+                }
+                node = node.wildcardChild;
+                break; // Wildcard consumes rest
+            } else if (segment.startsWith(":")) {
                 const param = segment.slice(1);
                 if (!node.paramChild) {
                     node.paramChild = this.createNode();
@@ -80,7 +88,6 @@ export class Router<Env = {}, Store = {}> {
             }
         }
 
-        // Lock in the middlewares at registration time
         node.route = {
             handler,
             middlewares: [...this.globalMiddlewares, ...middlewares],
@@ -110,34 +117,56 @@ export class Router<Env = {}, Store = {}> {
             query,
         };
 
-        const node = this.trees[method];
-        if (!node) return new Response("Not Found", { status: 404 });
+        const tryMatch = (node?: TrieNode<Env, Store>) => {
+            if (!node) return undefined;
 
-        let current: TrieNode<Env, Store> | undefined = node;
+            let current: TrieNode<Env, Store> = node;
+            const params: Record<string, string> = {};
 
-        for (const segment of segments) {
-            if (current?.children.has(segment)) {
-                current = current.children.get(segment);
-            } else if (current?.paramChild) {
-                ctx.params[current.paramChild.paramName!] = segment;
-                current = current.paramChild;
-            } else {
-                return new Response("Not Found", { status: 404 });
+            for (let i = 0; i < segments.length; i++) {
+                const segment = segments[i];
+
+                if (current.children.has(segment)) {
+                    current = current.children.get(segment)!;
+                } else if (current.paramChild) {
+                    params[current.paramChild.paramName!] = segment;
+                    current = current.paramChild;
+                } else if (current.wildcardChild) {
+                    // Optional: store remaining path in "*"
+                    params["*"] = segments.slice(i).join("/");
+                    current = current.wildcardChild;
+                    break;
+                } else {
+                    return undefined;
+                }
             }
+
+            if (current?.route) {
+                ctx.params = params;
+                return current.route;
+            }
+
+            return undefined;
+        };
+
+        let route = tryMatch(this.trees[method]);
+
+        if (!route) {
+            route = tryMatch(this.trees["*"]);
         }
 
-        if (!current?.route) {
+        if (!route) {
             return new Response("Not Found", { status: 404 });
         }
 
-        const { handler, middlewares } = current.route;
+        const { handler, middlewares } = route;
         const composed = this.compose([...middlewares, handler]);
         const result = await composed(ctx);
-        
+
         if (result instanceof Response) {
             return result;
         }
-        
+
         return new Response("OK");
     }
 
@@ -149,7 +178,7 @@ export class Router<Env = {}, Store = {}> {
                 index = i;
                 const fn = mws[i];
                 if (!fn) return;
-                
+
                 const result = await fn(ctx, () => dispatch(i + 1));
                 if (result instanceof Response) {
                     return result;
