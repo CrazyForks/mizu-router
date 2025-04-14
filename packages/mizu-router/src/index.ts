@@ -1,38 +1,124 @@
-// Router.ts
+/**
+ * Request context containing environment, store, and request information
+ * @template Env - Type for environment bindings (e.g., KV, D1, R2)
+ * @template Store - Type for global state store
+ */
 export type Context<Env = any, Store = any> = {
+    /** Original request object */
     req: Request
+    /** URL parameters extracted from route patterns */
     params: Record<string, string>
+    /** Query parameters from URL */
     query: Record<string, string>
+    /** Environment bindings */
     env: Env
+    /** Global state store */
     store: Store
 }
 
+/**
+ * Handler function type for route handlers and middleware
+ * @template Env - Type for environment bindings
+ * @template Store - Type for global state store
+ */
 type Handler<Env, Store> = (
     ctx: Context<Env, Store>,
     next: () => Promise<Response | void>
 ) => Promise<Response | void>
 
+/**
+ * Internal type representing a route with its handler and middleware stack
+ * @internal
+ */
 type Route<Env, Store> = {
     handler: Handler<Env, Store>
     middlewares: Handler<Env, Store>[]
 }
 
+/**
+ * Internal type representing a node in the routing trie
+ * @internal
+ */
 type Node<Env, Store> = {
+    /** Static route segments */
     children: Map<string, Node<Env, Store>>
+    /** Dynamic parameter node (e.g., :id) */
     param?: Node<Env, Store>
+    /** Name of the parameter if this is a param node */
     paramName?: string
+    /** Wildcard node (*) */
     wildcard?: Node<Env, Store>
+    /** Route handler if this node is a route endpoint */
     route?: Route<Env, Store>
 }
 
+/**
+ * Mizu Router - A fast, minimal and feature-rich router for Cloudflare Workers
+ * 
+ * @example
+ * Basic usage:
+ * ```typescript
+ * const router = new Router<Env, Store>();
+ * 
+ * router.get("/", async (ctx) => {
+ *     return new Response("Hello World!");
+ * });
+ * 
+ * // Handle request
+ * export default {
+ *     fetch(request: Request, env: Env, ctx: ExecutionContext) {
+ *         return router.handle(request, env);
+ *     }
+ * };
+ * ```
+ * 
+ * @example
+ * With middleware and parameters:
+ * ```typescript
+ * // Add middleware
+ * router.use(async (ctx, next) => {
+ *     console.log("Request:", ctx.req.url);
+ *     return next();
+ * });
+ * 
+ * // Route with parameters
+ * router.get("/users/:id", async (ctx) => {
+ *     const userId = ctx.params.id;
+ *     return new Response(`User: ${userId}`);
+ * });
+ * ```
+ * 
+ * @template Env - Type for environment bindings
+ * @template Store - Type for global state store
+ */
 export class Router<Env = {}, Store = {}> {
     private trees = new Map<string, Node<Env, Store>>()
     private middlewares: Handler<Env, Store>[] = []
 
+    /**
+     * Adds a global middleware to the router
+     * @param middleware - Middleware function to add
+     */
     use(middleware: Handler<Env, Store>) {
         this.middlewares.push(middleware)
     }
 
+    /**
+     * Mounts a subrouter at the specified prefix
+     * @param prefix - URL prefix to mount the subrouter at
+     * @param router - Subrouter to mount
+     * 
+     * @example
+     * ```typescript
+     * const userRouter = new Router<Env, Store>();
+     * userRouter.get("/:id", async (ctx) => {
+     *     return new Response(`User: ${ctx.params.id}`);
+     * });
+     * 
+     * // Mount at /users
+     * mainRouter.route("/users", userRouter);
+     * ```
+     */
     route(prefix: string, router: Router<Env, Store>) {
         this.register("*",
             prefix.endsWith("/") ? `${prefix}*` : `${prefix}/*`,
@@ -49,6 +135,10 @@ export class Router<Env = {}, Store = {}> {
         )
     }
 
+    /**
+     * Internal method to register routes
+     * @internal
+     */
     private register(method: string, path: string, handler: Handler<Env, Store>, middlewares: Handler<Env, Store>[] = []) {
         const segments = path.replace(/^\//, "").split("/").filter(Boolean)
 
@@ -88,14 +178,69 @@ export class Router<Env = {}, Store = {}> {
         }
     }
 
+    /**
+     * Registers a GET route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     get = this.register.bind(this, "GET")
+
+    /**
+     * Registers a POST route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     post = this.register.bind(this, "POST")
+
+    /**
+     * Registers a PUT route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     put = this.register.bind(this, "PUT")
+
+    /**
+     * Registers a PATCH route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     patch = this.register.bind(this, "PATCH")
+
+    /**
+     * Registers a DELETE route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     delete = this.register.bind(this, "DELETE")
+
+    /**
+     * Registers a HEAD route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     head = this.register.bind(this, "HEAD")
+
+    /**
+     * Registers an OPTIONS route
+     * @param path - URL pattern to match
+     * @param handler - Route handler function
+     * @param middlewares - Optional route-specific middleware
+     */
     options = this.register.bind(this, "OPTIONS")
 
+    /**
+     * Handles an incoming request
+     * @param req - Request object
+     * @param env - Environment bindings
+     * @param store - Optional global state store
+     * @returns Promise resolving to a Response
+     */
     async handle(req: Request, env: Env, store?: Store): Promise<Response> {
         const url = new URL(req.url)
         const method = req.method
