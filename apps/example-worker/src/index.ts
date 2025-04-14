@@ -1,4 +1,5 @@
 import { Router } from "mizu-router";
+import { cors } from "mizu-router/cors";
 
 // 1. Define Env interface for Cloudflare bindings
 interface Env {
@@ -12,6 +13,7 @@ interface Store {
 
 // Create router with Env and Store types
 const router = new Router<Env, Store>();
+router.use(cors());
 
 // 3. Global middleware that initializes store
 router.use(async (ctx, next) => {
