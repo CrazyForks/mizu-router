@@ -34,7 +34,7 @@ export class Router<Env = {}, Store = {}> {
     }
 
     route(prefix: string, subrouter: Router<Env, Store>) {
-        const handler = async (ctx: Context<Env, Store>, next: () => Promise<Response | void>) => {
+        const handler = async (ctx: Context<Env, Store>, _next: () => Promise<Response | void>) => {
             const url = new URL(ctx.req.url);
             const subPath = url.pathname.startsWith(prefix)
                 ? url.pathname.slice(prefix.length) || "/"

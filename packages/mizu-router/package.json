@@ -14,12 +14,14 @@
   },
   "homepage": "https://github.com/DarthBenro008/mizu-router#readme",
   "scripts": {
+    "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js"
   },
+  "types": "./dist/index.d.ts",
   "keywords": [
     "router",
     "cloudflare",
@@ -29,6 +31,7 @@
     "edge-runtime"
   ],
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250414.0",
     "@edge-runtime/vm": "^5.0.0",
     "typescript": "^5.5.2",
     "vitest": "~3.0.7"
