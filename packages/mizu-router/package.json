@@ -1,22 +1,35 @@
 {
   "name": "mizu-router",
   "version": "1.0.0",
-  "description": "",
+  "description": "Fast zero-dependency trie-based router for Cloudflare Workers",
   "type": "module",
+  "author": "Hemanth Krishna <hkpdev008@gmail.com> (https://github.com/DarthBenro008)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarthBenro008/mizu-router.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DarthBenro008/mizu-router/issues"
+  },
+  "homepage": "https://github.com/DarthBenro008/mizu-router#readme",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:watch": "vitest"
   },
   "exports": {
     ".": "./src/index.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "router",
+    "cloudflare",
+    "cloudflare-workers",
+    "middleware",
+    "api",
+    "edge-runtime"
+  ],
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
-    "@vitest/coverage-v8": "^1.3.1",
     "typescript": "^5.5.2",
     "vitest": "~3.0.7"
   }
