@@ -3,3 +3,11 @@ src/
 test/
 tsconfig.json
 vitest.config.ts
+.turbo
+.vscode
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+rollup.config.mjs

@@ -1,6 +1,6 @@
 {
   "name": "mizu-router",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fast zero-dependency trie-based router for Cloudflare Workers",
   "type": "module",
   "author": "Hemanth Krishna <hkpdev008@gmail.com> (https://github.com/DarthBenro008)",
